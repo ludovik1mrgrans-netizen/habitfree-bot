@@ -430,13 +430,17 @@ def webhook():
             return "OK", 200
 
         profile["successful_days"] = get_successful_days(chat_id)
+        relapse_count = get_relapse_count(chat_id)
+        last_relapse_reason = get_last_relapse_reason(chat_id)
 
         send_message(
             chat_id,
             "📊 <b>Твой прогресс</b>\n\n"
             f"🎯 Цель: {profile.get('goal', 'Не указана')}\n"
             f"🧠 Привычка: {profile.get('habit_type', 'Не указана')}\n"
-            f"🔥 Успешных дней: {profile.get('successful_days', 0)}\n\n"
+            f"🔥 Успешных дней: {profile.get('successful_days', 0)}\n"
+            f"⚠️ Срывов: {relapse_count}\n"
+            f"📝 Последняя причина: {last_relapse_reason or 'Пока нет'}\n\n"
             "Каждый день — это не экзамен. Главное — "
             "замечать и продолжать движение."
         )
