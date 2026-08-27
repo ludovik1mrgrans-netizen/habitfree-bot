@@ -344,6 +344,7 @@ def webhook():
 
     if text == "/progress" or "Мой прогресс" in text:
         print("PROGRESS MATCHED", flush=True)
+
         profile = profiles.get(chat_id)
 
         if not profile:
@@ -362,28 +363,26 @@ def webhook():
 
                 profiles[chat_id] = profile
 
-    profile = profiles.get(chat_id)
-    
-    if not profile or not profile.get("goal"):
+        if not profile or not profile.get("goal"):
+            send_message(
+                chat_id,
+                "Сначала пройди короткую настройку через /start."
+            )
+            return "OK", 200
+
+        profile["successful_days"] = get_successful_days(chat_id)
+
         send_message(
             chat_id,
-            "Сначала пройди короткую настройку через /start."
+            "📊 <b>Твой прогресс</b>\n\n"
+            f"🎯 Цель: {profile.get('goal', 'Не указана')}\n"
+            f"🧠 Привычка: {profile.get('habit_type', 'Не указана')}\n"
+            f"🔥 Успешных дней: {profile.get('successful_days', 0)}\n\n"
+            "Каждый день — это не экзамен. Главное — "
+            "замечать и продолжать движение."
         )
+
         return "OK", 200
-
-    profile["successful_days"] = get_successful_days(chat_id)
-
-    send_message(
-        chat_id,
-        "📊 <b>Твой прогресс</b>\n\n"
-        f"🎯 Цель: {profile.get('goal', 'Не указана')}\n"
-        f"🧠 Привычка: {profile.get('habit_type', 'Не указана')}\n"
-        f"🔥 Успешных дней: {profile.get('successful_days', 0)}\n\n"
-        "Каждый день — это не экзамен. Главное — "
-        "замечать и продолжать движение."
-    )
-
-    return "OK", 200
 
     # DAILY CHECK-IN     
 
