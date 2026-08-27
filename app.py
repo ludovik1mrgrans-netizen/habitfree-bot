@@ -276,23 +276,22 @@ def webhook():
             profiles[chat_id] = profile
 
         if not profile or not profile.get("goal"):
-                send_message(
+            send_message(
                 chat_id,
                 "Сначала пройди короткую настройку через /start."
             )
             return "OK", 200
-        
 
         send_message(
-                chat_id,
-                "📊 <b>Твой прогресс</b>\n\n"
-                f"🎯 Цель: {profile.get('goal', 'не указана')}\n"
-                f"🧠 Привычка: {profile.get('habit_type') or profile.get('habit')}\n"
-                f"🔥 Успешных дней: {profile.get('successful_days', 0)}\n\n"
-                "Каждый день — это не экзамен. Главное — замечать закономерности "
-                "и продолжать движение."
-            )
-            return "OK", 200
+            chat_id,
+            "📊 <b>Твой прогресс</b>\n\n"
+            f"🎯 Цель: {profile.get('goal', 'Не указана')}\n"
+            f"🧠 Привычка: {profile.get('habit_type') or profile.get('habit', 'Не указана')}\n"
+            f"🔥 Успешных дней: {profile.get('successful_days', 0)}\n\n"
+            "Каждый день — это не экзамен. Главное — замечать "
+            "и продолжать движение."
+        )
+        return "OK", 200        
 
     # DAILY CHECK-IN
     if text == "✅ Отметить день":
