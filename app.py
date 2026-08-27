@@ -476,6 +476,33 @@ def webhook():
         )
         return "OK", 200
 
+    state = user_states.get(chat_id)
+
+    if state == "craving_level" and text in [
+        "1", "2", "3", "4", "5",
+        "6", "7", "8", "9", "10"
+    ]:
+        craving_level = int(text)
+
+        user_states[chat_id] = "craving_trigger"
+
+        keyboard = [
+            ["😰 Стресс", "😴 Скука"],
+            ["🍺 Компания / алкоголь"],
+            ["☕ Привычная ситуация"],
+            ["🤷 Не знаю"],
+            ["🏠 Меню"]
+        ]
+
+        send_message(
+            chat_id,
+            f"Понял. Сейчас тяга примерно <b>{craving_level}/10</b>.\n\n"
+            "Что сильнее всего её спровоцировало?",
+            keyboard
+        )
+
+        return "OK", 200
+
            # PROGRESS
     print("REACHED PROGRESS CHECK:", repr(text), flush=True)
 
