@@ -338,7 +338,7 @@ def get_last_7_days(telegram_id):
 
         return days
 
-except Exception as e:
+    except Exception as e:
         print("Last 7 days error:", str(e))
         return ["⚪"] * 7
         
