@@ -440,7 +440,7 @@ def webhook():
             f"🧠 Привычка: {profile.get('habit_type', 'Не указана')}\n"
             f"🔥 Успешных дней: {profile.get('successful_days', 0)}\n"
             f"⚠️ Срывов: {relapse_count}\n"
-            f"📝 Последняя причина: {last_relapse_reason or 'Пока нет'}\n\n"
+            f"📝 Последняя причина: {(last_relapse_reason.split(': ', 1)[1] if ': ' in last_relapse_reason else last_relapse_reason) if last_relapse_reason else 'Пока нет'}\n\n"
             "Каждый день — это не экзамен. Главное — "
             "замечать и продолжать движение."
         )
