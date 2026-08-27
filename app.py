@@ -8,7 +8,52 @@ app = Flask(__name__)
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
+
+def save_user(telegram_id, first_name, username=None):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        print("Supabase variables are missing")
+        return False
+
+    url = f"{SUPABASE_URL}/rest/v1/users"
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates,return=minimal"
+    }
+
+    data = {
+        "telegram_id": telegram_id,
+        "first_name": first_name,
+        "username": username
+    }
+
+    try:
+        response = requests.post(
+            url,
+            headers=headers,
+            json=data,
+            timeout=10
+        )
+
+        if response.status_code in [200, 201, 204]:
+            print(f"Supabase user saved: {telegram_id}")
+            return True
+
+        print(
+            "Supabase error:",
+            response.status_code,
+            response.text
+        )
+        return False
+
+    except Exception as e:
+        print("Supabase request error:", str(e))
+        return False
 # Временно храним данные здесь.
 # Позже подключим настоящую БД.
 user_states = {}
@@ -97,9 +142,10 @@ def webhook():
     chat_id = message["chat"]["id"]
     first_name = message.get("from", {}).get("first_name", "друг")
     text = message.get("text", "").strip()
-
+username = message.get("from", {}).get("username")
     # START
     if text == "/start":
+      save_user(chat_id, first_name, username)
         start_onboarding(chat_id, first_name)
         return "OK", 200
 
