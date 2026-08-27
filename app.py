@@ -253,14 +253,31 @@ def webhook():
 
     # PROGRESS
     if text in ["/progress", "📊 Мой прогресс"]:
-        profile = profiles.get(chat_id)
+    profile = profiles.get(chat_id)
 
-        if not profile or not profile.get("habit"):
-            send_message(
-                chat_id,
-                "Сначала пройди короткую настройку через /start."
-            )
-            return "OK", 200
+    if not profile:
+        saved_profile = load_user_profile(chat_id)
+
+        if saved_profile and saved_profile.get("goal"):
+            profile = {
+                "name": first_name,
+                "habit": saved_profile.get("habit_type"),
+                "habit_type": saved_profile.get("product_type"),
+                "amount": saved_profile.get("daily_amount"),
+                "goal": saved_profile.get("goal"),
+                "start_date": saved_profile.get("started_at"),
+                "successful_days": 0
+            }
+
+            profiles[chat_id] = profile
+
+    if not profile or not profile.get("goal"):
+        send_message(
+            chat_id,
+            "Сначала пройди короткую настройку через /start."
+        )
+        return "OK", 200
+        
 
         send_message(
             chat_id,
