@@ -458,6 +458,7 @@ def webhook():
     state = user_states.get(chat_id)
 
     if state == "relapse_reason":
+        reason = text.strip()
         today = datetime.utcnow().date().isoformat()
 
         url = f"{SUPABASE_URL}/rest/v1/checkins"
@@ -471,25 +472,48 @@ def webhook():
         data = {
             "telegram_id": chat_id,
             "status": "relapse",
-            "note": f"{today}: {text}"
+            "note": f"{today}: {reason}"
         }
 
         try:
-            requests.post(
+            response = requests.post(
                 url,
                 headers=headers,
                 json=data,
                 timeout=10
             )
+
+            print(
+                "RELAPSE SAVE:",
+                response.status_code,
+                response.text,
+                flush=True
+            )
+
+            if response.status_code not in (200, 201):
+                send_message(
+                    chat_id,
+                    "Не получилось сохранить запись. Попробуй ещё раз."
+                )
+                return "OK", 200
+
         except Exception as e:
-            print("Relapse save error:", str(e))
+            print("RELAPSE SAVE ERROR:", str(e), flush=True)
+
+            send_message(
+                chat_id,
+                "Не получилось сохранить запись. Попробуй ещё раз."
+            )
+            return "OK", 200
 
         user_states[chat_id] = None
 
         send_message(
             chat_id,
-            "Спасибо, что записал это честно.\n\n"
-            "Срыв не отменяет весь прогресс. Теперь мы знаем чуть больше о том, что его запускает."
+            "Записал. Спасибо, что отметил это честно.\n\n"
+            f"📝 Причина: {reason}\n\n"
+            "Срыв не отменяет предыдущий прогресс. "
+            "Следующая задача — просто продолжить."
         )
 
         main_menu(chat_id)
