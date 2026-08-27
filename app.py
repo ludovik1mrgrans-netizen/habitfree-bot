@@ -200,6 +200,7 @@ def webhook():
     chat_id = message["chat"]["id"]
     first_name = message.get("from", {}).get("first_name", "")
     text = message.get("text", "").strip()
+    print("TELEGRAM TEXT:", repr(text), flush=True)
     username = message.get("from", {}).get("username")
 
     # START
