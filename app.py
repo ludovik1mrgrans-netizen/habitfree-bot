@@ -362,6 +362,8 @@ def webhook():
 
                 profiles[chat_id] = profile
 
+    profile = profiles.get(chat_id)
+    
     if not profile or not profile.get("goal"):
         send_message(
             chat_id,
