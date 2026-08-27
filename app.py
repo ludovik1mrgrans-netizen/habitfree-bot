@@ -253,7 +253,10 @@ def webhook():
         return "OK", 200
 
     # PROGRESS
+    print("REACHED PROGRESS CHECK:", repr(text), flush=True)
+   
     if text == "/progress" or "Мой прогресс" in text:
+       print("PROGRESS MATCHED", flush=True)
        profile = profiles.get(chat_id)
 
     if not profile:
