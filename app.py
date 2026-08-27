@@ -204,11 +204,11 @@ def webhook():
 
     # START
     if text == "/start":
-    save_user(chat_id, first_name, username)
+       save_user(chat_id, first_name, username)
 
-    saved_profile = load_user_profile(chat_id)
+       saved_profile = load_user_profile(chat_id)
 
-    if saved_profile and saved_profile.get("goal"):
+       if saved_profile and saved_profile.get("goal"):
         profiles[chat_id] = {
             "name": first_name,
             "habit": saved_profile.get("habit_type"),
