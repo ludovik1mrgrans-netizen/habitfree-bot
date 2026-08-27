@@ -304,7 +304,7 @@ def webhook():
             "amount": saved_profile.get("daily_amount"),
             "goal": saved_profile.get("goal"),
             "start_date": saved_profile.get("started_at"),
-            "successful_days": 0
+            "successful_days": get_successful_days(chat_id)
         }
 
         user_states[chat_id] = None
