@@ -252,14 +252,14 @@ def webhook():
         )
         return "OK", 200
 
-    # PROGRESS
+           # PROGRESS
     print("REACHED PROGRESS CHECK:", repr(text), flush=True)
-   
-    if text == "/progress" or "Мой прогресс" in text:
-       print("PROGRESS MATCHED", flush=True)
-       profile = profiles.get(chat_id)
 
-       if not profile:
+    if text == "/progress" or "Мой прогресс" in text:
+        print("PROGRESS MATCHED", flush=True)
+        profile = profiles.get(chat_id)
+
+        if not profile:
             saved_profile = load_user_profile(chat_id)
 
             if saved_profile and saved_profile.get("goal"):
@@ -271,9 +271,9 @@ def webhook():
                     "goal": saved_profile.get("goal"),
                     "start_date": saved_profile.get("started_at"),
                     "successful_days": 0
-            }
+                }
 
-            profiles[chat_id] = profile
+                profiles[chat_id] = profile
 
         if not profile or not profile.get("goal"):
             send_message(
@@ -291,7 +291,9 @@ def webhook():
             "Каждый день — это не экзамен. Главное — замечать "
             "и продолжать движение."
         )
-        return "OK", 200        
+        return "OK", 200
+
+    # DAILY CHECK-IN     
 
     # DAILY CHECK-IN
     if text == "✅ Отметить день":
