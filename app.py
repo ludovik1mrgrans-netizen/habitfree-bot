@@ -145,7 +145,7 @@ def webhook():
 username = message.get("from", {}).get("username")
     # START
     if text == "/start":
-      save_user(chat_id, first_name, username)
+        save_user(chat_id, first_name, username)
         start_onboarding(chat_id, first_name)
         return "OK", 200
 
