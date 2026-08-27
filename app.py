@@ -253,7 +253,7 @@ def webhook():
 
     # PROGRESS
     if text in ["/progress", "📊 Мой прогресс"]:
-    profile = profiles.get(chat_id)
+       profile = profiles.get(chat_id)
 
     if not profile:
         saved_profile = load_user_profile(chat_id)
