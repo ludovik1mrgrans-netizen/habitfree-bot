@@ -223,8 +223,8 @@ def webhook():
         main_menu(chat_id)
         return "OK", 200
 
-    start_onboarding(chat_id, first_name)
-    return "OK", 200
+        start_onboarding(chat_id, first_name)
+        return "OK", 200
 
     # MENU
     if text in ["/menu", "🏠 Меню"]:
