@@ -418,7 +418,15 @@ def webhook():
     if state == "choose_goal":
         profiles[chat_id]["goal"] = text
         profiles[chat_id]["start_date"] = datetime.utcnow().isoformat()
-
+     
+        update_user_profile(
+        chat_id,
+        habit_type=profiles[chat_id].get("habit"),
+        product_type=profiles[chat_id].get("habit_type"),
+        daily_amount=profiles[chat_id].get("amount"),
+        goal=profiles[chat_id].get("goal"),
+        started_at=profiles[chat_id]["start_date"]
+    )
         user_states[chat_id] = None
 
         send_message(
