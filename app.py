@@ -503,7 +503,7 @@ def webhook():
 
         return "OK", 200
         
-   if state == "craving_trigger" and text in [
+    if state == "craving_trigger" and text in [
         "😰 Стресс",
         "😴 Скука",
         "🍺 Компания / алкоголь",
