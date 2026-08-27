@@ -204,7 +204,66 @@ def save_success_checkin(telegram_id):
     except Exception as e:
         print("Checkin save error:", str(e))
         return False
-    
+        
+def get_relapse_count(telegram_id):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return 0
+
+    url = (
+        f"{SUPABASE_URL}/rest/v1/checkins"
+        f"?telegram_id=eq.{telegram_id}"
+        f"&status=eq.relapse"
+        f"&select=id"
+    )
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}"
+    }
+
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+
+        if response.status_code == 200:
+            return len(response.json())
+
+    except Exception as e:
+        print("Relapse count error:", str(e))
+
+    return 0
+
+
+def get_last_relapse_reason(telegram_id):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return None
+
+    url = (
+        f"{SUPABASE_URL}/rest/v1/checkins"
+        f"?telegram_id=eq.{telegram_id}"
+        f"&status=eq.relapse"
+        f"&select=note"
+        f"&order=id.desc"
+        f"&limit=1"
+    )
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}"
+    }
+
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+
+        if response.status_code == 200:
+            rows = response.json()
+
+            if rows:
+                return rows[0].get("note")
+
+    except Exception as e:
+        print("Last relapse reason error:", str(e))
+
+    return None 
 def send_message(chat_id, text, keyboard=None):
     data = {
         "chat_id": chat_id,
