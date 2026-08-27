@@ -1,28 +1,82 @@
 import os
+from datetime import datetime
 
-from flask import Flask, request
 import requests
+from flask import Flask, request
 
 app = Flask(__name__)
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
+# Временно храним данные здесь.
+# Позже подключим настоящую БД.
+user_states = {}
+profiles = {}
 
-def send_message(chat_id, text, reply_markup=None):
+
+def send_message(chat_id, text, keyboard=None):
     data = {
         "chat_id": chat_id,
         "text": text,
         "parse_mode": "HTML",
     }
 
-    if reply_markup:
-        data["reply_markup"] = reply_markup
+    if keyboard:
+        data["reply_markup"] = {
+            "keyboard": keyboard,
+            "resize_keyboard": True
+        }
 
     requests.post(
         f"{TELEGRAM_API}/sendMessage",
         json=data,
         timeout=10
+    )
+
+
+def main_menu(chat_id):
+    keyboard = [
+        ["🆘 Мне сейчас хочется"],
+        ["📊 Мой прогресс", "✅ Отметить день"],
+        ["⚙️ Настройки"]
+    ]
+
+    send_message(
+        chat_id,
+        "🏠 <b>HabitFree</b>\n\n"
+        "Что хочешь сделать?",
+        keyboard
+    )
+
+
+def start_onboarding(chat_id, first_name):
+    profiles[chat_id] = {
+        "name": first_name,
+        "habit": None,
+        "habit_type": None,
+        "amount": None,
+        "goal": None,
+        "start_date": None,
+        "successful_days": 0
+    }
+
+    user_states[chat_id] = "choose_habit"
+
+    keyboard = [
+        ["🚬 Никотин"],
+        ["🍺 Алкоголь"],
+        ["🧠 Другая привычка"]
+    ]
+
+    send_message(
+        chat_id,
+        f"👋 <b>Привет, {first_name}!</b>\n\n"
+        "Я HabitFree — помощник, который помогает постепенно "
+        "менять вредные привычки.\n\n"
+        "Без осуждения и давления. Мы будем двигаться маленькими шагами.\n\n"
+        "<b>С чего хочешь начать?</b>",
+        keyboard
     )
 
 
@@ -41,56 +95,356 @@ def webhook():
         return "OK", 200
 
     chat_id = message["chat"]["id"]
-    text = message.get("text", "")
+    first_name = message.get("from", {}).get("first_name", "друг")
+    text = message.get("text", "").strip()
 
+    # START
     if text == "/start":
-        keyboard = {
-            "keyboard": [
-                [{"text": "🚬 Никотин"}],
-                [{"text": "🍺 Алкоголь"}],
-                [{"text": "🧠 Другая привычка"}]
-            ],
-            "resize_keyboard": True
-        }
+        start_onboarding(chat_id, first_name)
+        return "OK", 200
+
+    # MENU
+    if text in ["/menu", "🏠 Меню"]:
+        main_menu(chat_id)
+        return "OK", 200
+
+    # CRAVING / СИЛЬНАЯ ТЯГА
+    if text in ["/craving", "🆘 Мне сейчас хочется"]:
+        user_states[chat_id] = "craving_level"
+
+        keyboard = [
+            ["1", "2", "3", "4", "5"],
+            ["6", "7", "8", "9", "10"],
+            ["🏠 Меню"]
+        ]
 
         send_message(
             chat_id,
-            "👋 <b>Привет! Я HabitFree.</b>\n\n"
-            "Я помогу тебе постепенно взять вредную привычку "
-            "под контроль и отслеживать свой прогресс.\n\n"
-            "Без осуждения. Шаг за шагом. 💚\n\n"
-            "<b>С чего хочешь начать?</b>",
+            "🆘 <b>Я рядом.</b>\n\n"
+            "Сейчас не нужно решать всё навсегда.\n"
+            "Наша задача — пережить ближайшие несколько минут.\n\n"
+            "Оцени желание сорваться от <b>1 до 10</b>:",
             keyboard
         )
+        return "OK", 200
 
-    elif text == "🚬 Никотин":
+    # PROGRESS
+    if text in ["/progress", "📊 Мой прогресс"]:
+        profile = profiles.get(chat_id)
+
+        if not profile or not profile.get("habit"):
+            send_message(
+                chat_id,
+                "Сначала пройди короткую настройку через /start."
+            )
+            return "OK", 200
+
         send_message(
             chat_id,
-            "🚬 <b>Начнём с никотина.</b>\n\n"
-            "Что ты используешь чаще всего?\n\n"
-            "Напиши: сигареты, вейп, снюс или другое."
+            "📊 <b>Твой прогресс</b>\n\n"
+            f"🎯 Цель: {profile.get('goal', 'не указана')}\n"
+            f"🧠 Привычка: {profile.get('habit_type') or profile.get('habit')}\n"
+            f"🔥 Успешных дней: {profile.get('successful_days', 0)}\n\n"
+            "Каждый день — это не экзамен. Главное — замечать закономерности "
+            "и продолжать движение."
         )
+        return "OK", 200
 
-    elif text == "🍺 Алкоголь":
+    # DAILY CHECK-IN
+    if text == "✅ Отметить день":
+        profile = profiles.get(chat_id)
+
+        if not profile:
+            send_message(chat_id, "Сначала напиши /start.")
+            return "OK", 200
+
+        keyboard = [
+            ["✅ Получилось"],
+            ["⚠️ Был срыв"],
+            ["🏠 Меню"]
+        ]
+
+        user_states[chat_id] = "daily_check"
+
         send_message(
             chat_id,
-            "🍺 <b>Понял.</b>\n\n"
-            "Для начала расскажи: как часто ты обычно употребляешь алкоголь?"
+            "Как прошёл сегодняшний день?",
+            keyboard
         )
+        return "OK", 200
 
-    elif text == "🧠 Другая привычка":
+    if text == "✅ Получилось":
+        profile = profiles.get(chat_id)
+
+        if profile:
+            profile["successful_days"] += 1
+
         send_message(
             chat_id,
-            "🧠 Хорошо. Напиши, от какой привычки ты хотел бы избавиться."
+            "🔥 <b>Отлично.</b>\n\n"
+            "Сегодняшний день записан.\n"
+            "Не думай сейчас о месяце или годе — следующий ориентир просто завтра."
         )
 
-    else:
+        main_menu(chat_id)
+        return "OK", 200
+
+    if text == "⚠️ Был срыв":
+        user_states[chat_id] = "relapse_reason"
+
         send_message(
             chat_id,
-            "Я тебя услышал. 💚\n\n"
-            "Сейчас HabitFree находится в разработке. "
-            "Скоро я смогу продолжить этот разговор."
+            "Спасибо, что отметил это честно.\n\n"
+            "Срыв — это информация о том, где было особенно трудно.\n\n"
+            "Что произошло прямо перед этим?\n"
+            "Например: стресс, компания, алкоголь, скука, конфликт или сильная тяга."
         )
+        return "OK", 200
+
+    state = user_states.get(chat_id)
+
+    # ONBOARDING — HABIT
+    if state == "choose_habit":
+
+        if text == "🚬 Никотин":
+            profiles[chat_id]["habit"] = "nicotine"
+            user_states[chat_id] = "nicotine_type"
+
+            keyboard = [
+                ["🚬 Сигареты"],
+                ["💨 Вейп"],
+                ["🔵 Снюс / никотиновые паучи"],
+                ["Другое"]
+            ]
+
+            send_message(
+                chat_id,
+                "🚬 <b>Начнём с никотина.</b>\n\n"
+                "Что ты используешь чаще всего?",
+                keyboard
+            )
+            return "OK", 200
+
+        if text == "🍺 Алкоголь":
+            profiles[chat_id]["habit"] = "alcohol"
+            user_states[chat_id] = "alcohol_frequency"
+
+            keyboard = [
+                ["Несколько раз в месяц"],
+                ["1–3 раза в неделю"],
+                ["4+ раза в неделю"],
+                ["Каждый день"]
+            ]
+
+            send_message(
+                chat_id,
+                "🍺 Понял.\n\n"
+                "Как часто ты обычно употребляешь алкоголь?",
+                keyboard
+            )
+            return "OK", 200
+
+        if text == "🧠 Другая привычка":
+            profiles[chat_id]["habit"] = "other"
+            user_states[chat_id] = "other_habit"
+
+            send_message(
+                chat_id,
+                "Напиши, какую привычку ты хочешь изменить."
+            )
+            return "OK", 200
+
+    # NICOTINE TYPE
+    if state == "nicotine_type":
+        profiles[chat_id]["habit_type"] = text
+        user_states[chat_id] = "nicotine_amount"
+
+        send_message(
+            chat_id,
+            "Понял 👍\n\n"
+            "Сколько примерно ты используешь в день?\n\n"
+            "Например: <b>10 сигарет</b> или <b>один картридж</b>."
+        )
+        return "OK", 200
+
+    # NICOTINE AMOUNT
+    if state == "nicotine_amount":
+        profiles[chat_id]["amount"] = text
+        user_states[chat_id] = "choose_goal"
+
+        keyboard = [
+            ["🚫 Полностью отказаться"],
+            ["📉 Постепенно сократить"],
+            ["🧠 Пока хочу понять привычку"]
+        ]
+
+        send_message(
+            chat_id,
+            "🎯 <b>Какой результат тебе сейчас ближе?</b>",
+            keyboard
+        )
+        return "OK", 200
+
+    # ALCOHOL FREQUENCY
+    if state == "alcohol_frequency":
+        profiles[chat_id]["habit_type"] = "Алкоголь"
+        profiles[chat_id]["amount"] = text
+
+        if text in ["4+ раза в неделю", "Каждый день"]:
+            send_message(
+                chat_id,
+                "⚠️ <b>Важный момент.</b>\n\n"
+                "Если алкоголь употребляется часто или в больших количествах, "
+                "резкая самостоятельная отмена иногда может быть небезопасной.\n\n"
+                "HabitFree не заменяет врача. При дрожи, судорогах, спутанности "
+                "сознания, галлюцинациях или тяжёлом самочувствии нужна срочная "
+                "медицинская помощь.\n\n"
+                "Мы можем работать над привычкой, но не будем советовать "
+                "небезопасную резкую отмену."
+            )
+
+        user_states[chat_id] = "choose_goal"
+
+        keyboard = [
+            ["🚫 Полностью отказаться"],
+            ["📉 Постепенно сократить"],
+            ["🧠 Пока хочу понять привычку"]
+        ]
+
+        send_message(
+            chat_id,
+            "🎯 Какой результат тебе сейчас ближе?",
+            keyboard
+        )
+        return "OK", 200
+
+    # OTHER HABIT
+    if state == "other_habit":
+        profiles[chat_id]["habit_type"] = text
+        user_states[chat_id] = "choose_goal"
+
+        keyboard = [
+            ["🚫 Полностью отказаться"],
+            ["📉 Постепенно сократить"],
+            ["🧠 Пока хочу понять привычку"]
+        ]
+
+        send_message(
+            chat_id,
+            "Понял.\n\n🎯 Какой результат тебе сейчас ближе?",
+            keyboard
+        )
+        return "OK", 200
+
+    # GOAL
+    if state == "choose_goal":
+        profiles[chat_id]["goal"] = text
+        profiles[chat_id]["start_date"] = datetime.utcnow().isoformat()
+
+        user_states[chat_id] = None
+
+        send_message(
+            chat_id,
+            "✅ <b>Твой профиль HabitFree готов.</b>\n\n"
+            f"🎯 Цель: {text}\n"
+            f"🧠 Привычка: {profiles[chat_id].get('habit_type')}\n\n"
+            "Теперь мы можем отслеживать прогресс и помогать тебе "
+            "в моменты сильной тяги."
+        )
+
+        main_menu(chat_id)
+        return "OK", 200
+
+    # CRAVING LEVEL
+    if state == "craving_level" and text.isdigit():
+        level = int(text)
+
+        if 1 <= level <= 10:
+            user_states[chat_id] = "craving_followup"
+
+            if level >= 8:
+                response = (
+                    "🆘 <b>Сильная тяга. Действуем прямо сейчас.</b>\n\n"
+                    "1️⃣ Отложи действие всего на 5 минут.\n"
+                    "2️⃣ Уйди подальше от сигареты, алкоголя или другого триггера.\n"
+                    "3️⃣ Выпей воды.\n"
+                    "4️⃣ Сделай 5 медленных вдохов.\n\n"
+                    "Теперь напиши мне одним словом:\n"
+                    "<b>что вызвало тягу?</b>\n\n"
+                    "Например: стресс, скука, компания, злость, после еды."
+                )
+            else:
+                response = (
+                    f"Понял — сейчас примерно <b>{level}/10</b>.\n\n"
+                    "Попробуем не бороться с ощущением, а просто дать ему пройти.\n\n"
+                    "Что произошло прямо перед появлением желания?"
+                )
+
+            send_message(chat_id, response)
+            return "OK", 200
+
+    # CRAVING FOLLOWUP
+    if state == "craving_followup":
+        user_states[chat_id] = None
+
+        keyboard = [
+            ["✅ Стало легче"],
+            ["🆘 Всё ещё очень хочется"],
+            ["🏠 Меню"]
+        ]
+
+        send_message(
+            chat_id,
+            f"Запомнил триггер: <b>{text}</b>.\n\n"
+            "Теперь попробуй изменить ситуацию хотя бы на несколько минут: "
+            "встань, смени комнату, выйди на улицу или переключись на другое действие.\n\n"
+            "Как сейчас?",
+            keyboard
+        )
+        return "OK", 200
+
+    if text == "✅ Стало легче":
+        send_message(
+            chat_id,
+            "💚 Хорошо.\n\n"
+            "Ты только что пережил одну волну тяги, не действуя автоматически. "
+            "Именно такие моменты постепенно меняют привычку."
+        )
+        main_menu(chat_id)
+        return "OK", 200
+
+    if text == "🆘 Всё ещё очень хочется":
+        send_message(
+            chat_id,
+            "Тогда ещё не оставайся с этим один на один.\n\n"
+            "Отложи решение ещё на 10 минут и постарайся физически удалить "
+            "триггер из доступа.\n\n"
+            "Если ситуация связана с алкоголем и у тебя появляются тяжёлые "
+            "симптомы отмены или резко ухудшается самочувствие — обращайся "
+            "за срочной медицинской помощью."
+        )
+        return "OK", 200
+
+    # RELAPSE
+    if state == "relapse_reason":
+        user_states[chat_id] = None
+
+        send_message(
+            chat_id,
+            f"Записал: <b>{text}</b>.\n\n"
+            "Теперь мы знаем ещё один твой триггер. Не нужно ждать понедельника "
+            "или начинать всё заново — следующий выбор можно сделать уже сегодня."
+        )
+
+        main_menu(chat_id)
+        return "OK", 200
+
+    # FALLBACK
+    send_message(
+        chat_id,
+        "Не совсем понял сообщение.\n\n"
+        "Нажми /start для новой настройки или /menu для главного меню."
+    )
 
     return "OK", 200
 
