@@ -264,6 +264,62 @@ def get_last_relapse_reason(telegram_id):
         print("Last relapse reason error:", str(e))
 
     return None 
+
+def get_last_7_days(telegram_id):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return []
+
+    url = (
+        f"{SUPABASE_URL}/rest/v1/checkins"
+        f"?telegram_id=eq.{telegram_id}"
+        f"&select=status,note"
+        f"&order=id.desc"
+        f"&limit=20"
+    )
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}"
+    }
+
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+
+        if response.status_code != 200:
+            return []
+
+        rows = response.json()
+
+        by_day = {}
+
+        for row in rows:
+            status = row.get("status")
+            note = row.get("note", "")
+
+            if not note:
+                continue
+
+            day = note.split(": ", 1)[0]
+
+            if day not in by_day:
+                by_day[day] = status
+
+        days = []
+
+        for day, status in list(by_day.items())[:7]:
+            if status == "success":
+                days.append("✅")
+            elif status == "relapse":
+                days.append("⚠️")
+            else:
+                days.append("•")
+
+        return list(reversed(days))
+
+    except Exception as e:
+        print("Last 7 days error:", str(e))
+        return []
+        
 def send_message(chat_id, text, keyboard=None):
     data = {
         "chat_id": chat_id,
@@ -432,7 +488,8 @@ def webhook():
         profile["successful_days"] = get_successful_days(chat_id)
         relapse_count = get_relapse_count(chat_id)
         last_relapse_reason = get_last_relapse_reason(chat_id)
-
+        last_7_days = get_last_7_days(chat_id)
+       
         send_message(
             chat_id,
             "📊 <b>Твой прогресс</b>\n\n"
@@ -440,6 +497,7 @@ def webhook():
             f"🧠 Привычка: {profile.get('habit_type', 'Не указана')}\n"
             f"🔥 Успешных дней: {profile.get('successful_days', 0)}\n"
             f"⚠️ Срывов: {relapse_count}\n"
+            f"📅 Последние дни: {' '.join(last_7_days) if last_7_days else 'Пока нет данных'}\n"
             f"📝 Последняя причина: {(last_relapse_reason.split(': ', 1)[1] if ': ' in last_relapse_reason else last_relapse_reason) if last_relapse_reason else 'Пока нет'}\n\n"
             "Каждый день — это не экзамен. Главное — "
             "замечать и продолжать движение."
