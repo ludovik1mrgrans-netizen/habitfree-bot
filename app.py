@@ -259,40 +259,40 @@ def webhook():
        print("PROGRESS MATCHED", flush=True)
        profile = profiles.get(chat_id)
 
-    if not profile:
-        saved_profile = load_user_profile(chat_id)
+       if not profile:
+            saved_profile = load_user_profile(chat_id)
 
-        if saved_profile and saved_profile.get("goal"):
-            profile = {
-                "name": first_name,
-                "habit": saved_profile.get("habit_type"),
-                "habit_type": saved_profile.get("product_type"),
-                "amount": saved_profile.get("daily_amount"),
-                "goal": saved_profile.get("goal"),
-                "start_date": saved_profile.get("started_at"),
-                "successful_days": 0
+            if saved_profile and saved_profile.get("goal"):
+                profile = {
+                    "name": first_name,
+                    "habit": saved_profile.get("habit_type"),
+                    "habit_type": saved_profile.get("product_type"),
+                    "amount": saved_profile.get("daily_amount"),
+                    "goal": saved_profile.get("goal"),
+                    "start_date": saved_profile.get("started_at"),
+                    "successful_days": 0
             }
 
             profiles[chat_id] = profile
 
-    if not profile or not profile.get("goal"):
-        send_message(
-            chat_id,
-            "Сначала пройди короткую настройку через /start."
-        )
-        return "OK", 200
+        if not profile or not profile.get("goal"):
+                send_message(
+                chat_id,
+                "Сначала пройди короткую настройку через /start."
+            )
+            return "OK", 200
         
 
-        send_message(
-            chat_id,
-            "📊 <b>Твой прогресс</b>\n\n"
-            f"🎯 Цель: {profile.get('goal', 'не указана')}\n"
-            f"🧠 Привычка: {profile.get('habit_type') or profile.get('habit')}\n"
-            f"🔥 Успешных дней: {profile.get('successful_days', 0)}\n\n"
-            "Каждый день — это не экзамен. Главное — замечать закономерности "
-            "и продолжать движение."
-        )
-        return "OK", 200
+            send_message(
+                chat_id,
+                "📊 <b>Твой прогресс</b>\n\n"
+                f"🎯 Цель: {profile.get('goal', 'не указана')}\n"
+                f"🧠 Привычка: {profile.get('habit_type') or profile.get('habit')}\n"
+                f"🔥 Успешных дней: {profile.get('successful_days', 0)}\n\n"
+                "Каждый день — это не экзамен. Главное — замечать закономерности "
+                "и продолжать движение."
+            )
+            return "OK", 200
 
     # DAILY CHECK-IN
     if text == "✅ Отметить день":
