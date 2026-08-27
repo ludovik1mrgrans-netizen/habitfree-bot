@@ -453,6 +453,43 @@ def webhook():
 
     state = user_states.get(chat_id)
 
+    if state == "relapse_reason":
+        today = datetime.utcnow().date().isoformat()
+
+        url = f"{SUPABASE_URL}/rest/v1/checkins"
+
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        data = {
+            "telegram_id": chat_id,
+            "status": "relapse",
+            "note": f"{today}: {text}"
+        }
+
+        try:
+            requests.post(
+                url,
+                headers=headers,
+                json=data,
+                timeout=10
+            )
+        except Exception as e:
+            print("Relapse save error:", str(e))
+
+        user_states[chat_id] = None
+
+        send_message(
+            chat_id,
+            "Спасибо, что записал это честно.\n\n"
+            "Срыв не отменяет весь прогресс. Теперь мы знаем чуть больше о том, что его запускает."
+        )
+
+        main_menu(chat_id)
+        return "OK", 200
     # ONBOARDING — HABIT
     if state == "choose_habit":
 
