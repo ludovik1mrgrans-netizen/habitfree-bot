@@ -90,7 +90,34 @@ def update_user_profile(telegram_id, **fields):
     except Exception as e:
         print("Supabase update request error:", str(e))
         return False
+def load_user_profile(telegram_id):
+    url = f"{SUPABASE_URL}/rest/v1/users?telegram_id=eq.{telegram_id}&select=*"
 
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=10
+        )
+
+        if response.status_code == 200:
+            data = response.json()
+
+            if data:
+                return data[0]
+
+        print("Supabase load error:", response.status_code, response.text)
+        return None
+
+    except Exception as e:
+        print("Supabase load request error:", str(e))
+        return None
 def send_message(chat_id, text, keyboard=None):
     data = {
         "chat_id": chat_id,
