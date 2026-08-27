@@ -118,6 +118,93 @@ def load_user_profile(telegram_id):
     except Exception as e:
         print("Supabase load request error:", str(e))
         return None
+        
+def get_successful_days(telegram_id):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return 0
+
+    url = (
+        f"{SUPABASE_URL}/rest/v1/checkins"
+        f"?telegram_id=eq.{telegram_id}"
+        f"&status=eq.success"
+        f"&select=id"
+    )
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}"
+    }
+
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+
+        if response.status_code == 200:
+            return len(response.json())
+
+    except Exception as e:
+        print("Checkins count error:", str(e))
+
+    return 0
+    
+def success_checkin_exists_today(telegram_id):
+    today = datetime.utcnow().date().isoformat()
+
+    url = (
+        f"{SUPABASE_URL}/rest/v1/checkins"
+        f"?telegram_id=eq.{telegram_id}"
+        f"&status=eq.success"
+        f"&note=eq.{today}"
+        f"&select=id"
+        f"&limit=1"
+    )
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}"
+    }
+
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+
+        if response.status_code == 200:
+            return len(response.json()) > 0
+
+    except Exception as e:
+        print("Checkin lookup error:", str(e))
+
+    return False
+    
+def save_success_checkin(telegram_id):
+    today = datetime.utcnow().date().isoformat()
+
+    url = f"{SUPABASE_URL}/rest/v1/checkins"
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "telegram_id": telegram_id,
+        "status": "success",
+        "note": today
+    }
+
+    try:
+        response = requests.post(
+            url,
+            headers=headers,
+            json=data,
+            timeout=10
+        )
+
+        return response.status_code in [200, 201]
+
+    except Exception as e:
+        print("Checkin save error:", str(e))
+        return False
+    
 def send_message(chat_id, text, keyboard=None):
     data = {
         "chat_id": chat_id,
@@ -318,19 +405,37 @@ def webhook():
         )
         return "OK", 200
 
-    if text == "✅ Получилось":
+        if text == "✅ Получилось":
         profile = profiles.get(chat_id)
 
+        if success_checkin_exists_today(chat_id):
+            send_message(
+                chat_id,
+                "✅ Сегодняшний день уже отмечен.\n\n"
+                "Следующую отметку можно сделать завтра."
+            )
+            user_states[chat_id] = None
+            main_menu(chat_id)
+            return "OK", 200
+
         if profile:
-            profile["successful_days"] += 1
+            if save_success_checkin(chat_id):
+                profile["successful_days"] = get_successful_days(chat_id)
 
-        send_message(
-            chat_id,
-            "🔥 <b>Отлично.</b>\n\n"
-            "Сегодняшний день записан.\n"
-            "Не думай сейчас о месяце или годе — следующий ориентир просто завтра."
-        )
+                send_message(
+                    chat_id,
+                    "🔥 <b>Отлично.</b>\n\n"
+                    "Сегодняшний день записан.\n"
+                    "Не думай сейчас о месяце или годе — "
+                    "следующий ориентир просто завтра."
+                )
+            else:
+                send_message(
+                    chat_id,
+                    "Не удалось записать сегодняшний день. Попробуй ещё раз."
+                )
 
+        user_states[chat_id] = None
         main_menu(chat_id)
         return "OK", 200
 
