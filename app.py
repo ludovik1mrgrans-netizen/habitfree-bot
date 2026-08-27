@@ -316,20 +316,29 @@ def get_last_7_days(telegram_id):
         today = datetime.utcnow().date()
         days = []
 
+        weekday_names = [
+            "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"
+        ]
+
         for offset in range(6, -1, -1):
-            day = (today - timedelta(days=offset)).isoformat()
+            date_obj = today - timedelta(days=offset)
+            day = date_obj.isoformat()
             status = by_day.get(day)
 
+            weekday = weekday_names[date_obj.weekday()]
+
             if status == "success":
-                days.append("✅")
+                icon = "✅"
             elif status == "relapse":
-                days.append("⚠️")
+                icon = "⚠️"
             else:
-                days.append("⚪")
+                icon = "⚪"
+
+            days.append(f"{weekday}{icon}")
 
         return days
 
-    except Exception as e:
+except Exception as e:
         print("Last 7 days error:", str(e))
         return ["⚪"] * 7
         
