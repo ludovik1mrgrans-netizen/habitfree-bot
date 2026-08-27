@@ -405,7 +405,7 @@ def webhook():
         )
         return "OK", 200
 
-        if text == "✅ Получилось":
+    if text == "✅ Получилось":
         profile = profiles.get(chat_id)
 
         if success_checkin_exists_today(chat_id):
