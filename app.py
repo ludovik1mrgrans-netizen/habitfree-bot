@@ -140,9 +140,10 @@ def webhook():
         return "OK", 200
 
     chat_id = message["chat"]["id"]
-    first_name = message.get("from", {}).get("first_name", "друг")
+    first_name = message.get("from", {}).get("first_name", "")
     text = message.get("text", "").strip()
-username = message.get("from", {}).get("username")
+    username = message.get("from", {}).get("username")
+
     # START
     if text == "/start":
         save_user(chat_id, first_name, username)
