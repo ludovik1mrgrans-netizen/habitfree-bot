@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import requests
 from flask import Flask, request
@@ -267,14 +267,14 @@ def get_last_relapse_reason(telegram_id):
 
 def get_last_7_days(telegram_id):
     if not SUPABASE_URL or not SUPABASE_KEY:
-        return []
+        return ["⚪"] * 7
 
     url = (
         f"{SUPABASE_URL}/rest/v1/checkins"
         f"?telegram_id=eq.{telegram_id}"
         f"&select=status,note"
         f"&order=id.desc"
-        f"&limit=20"
+        f"&limit=50"
     )
 
     headers = {
@@ -283,13 +283,16 @@ def get_last_7_days(telegram_id):
     }
 
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=10
+        )
 
         if response.status_code != 200:
-            return []
+            return ["⚪"] * 7
 
         rows = response.json()
-
         by_day = {}
 
         for row in rows:
@@ -299,26 +302,36 @@ def get_last_7_days(telegram_id):
             if not note:
                 continue
 
-            day = note.split(": ", 1)[0]
+            day = note[:10]
+
+            if len(day) != 10:
+                continue
 
             if day not in by_day:
                 by_day[day] = status
 
+            elif status == "relapse":
+                by_day[day] = "relapse"
+
+        today = datetime.utcnow().date()
         days = []
 
-        for day, status in list(by_day.items())[:7]:
+        for offset in range(6, -1, -1):
+            day = (today - timedelta(days=offset)).isoformat()
+            status = by_day.get(day)
+
             if status == "success":
                 days.append("✅")
             elif status == "relapse":
                 days.append("⚠️")
             else:
-                days.append("•")
+                days.append("⚪")
 
-        return list(reversed(days))
+        return days
 
     except Exception as e:
         print("Last 7 days error:", str(e))
-        return []
+        return ["⚪"] * 7
         
 def send_message(chat_id, text, keyboard=None):
     data = {
