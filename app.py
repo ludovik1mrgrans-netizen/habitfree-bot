@@ -290,26 +290,26 @@ def webhook():
     print("TELEGRAM TEXT:", repr(text), flush=True)
     username = message.get("from", {}).get("username")
 
-    # START
-    if text == "/start":
-       save_user(chat_id, first_name, username)
+        # START
+    if text == "/start" or text.startswith("/start@"):
+        save_user(chat_id, first_name, username)
 
-       saved_profile = load_user_profile(chat_id)
+        saved_profile = load_user_profile(chat_id)
 
-       if saved_profile and saved_profile.get("goal"):
-        profiles[chat_id] = {
-            "name": first_name,
-            "habit": saved_profile.get("habit_type"),
-            "habit_type": saved_profile.get("product_type"),
-            "amount": saved_profile.get("daily_amount"),
-            "goal": saved_profile.get("goal"),
-            "start_date": saved_profile.get("started_at"),
-            "successful_days": get_successful_days(chat_id)
-        }
+        if saved_profile and saved_profile.get("goal"):
+            profiles[chat_id] = {
+                "name": first_name,
+                "habit": saved_profile.get("habit_type"),
+                "habit_type": saved_profile.get("product_type"),
+                "amount": saved_profile.get("daily_amount"),
+                "goal": saved_profile.get("goal"),
+                "start_date": saved_profile.get("started_at"),
+                "successful_days": get_successful_days(chat_id)
+            }
 
-        user_states[chat_id] = None
-        main_menu(chat_id)
-        return "OK", 200
+            user_states[chat_id] = None
+            main_menu(chat_id)
+            return "OK", 200
 
         start_onboarding(chat_id, first_name)
         return "OK", 200
