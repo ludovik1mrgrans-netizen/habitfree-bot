@@ -526,6 +526,7 @@ def webhook():
 
     return "OK", 200
 
+print("REACHED APP START", flush=True)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
