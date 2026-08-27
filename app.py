@@ -252,7 +252,7 @@ def webhook():
         return "OK", 200
 
     # PROGRESS
-    if text in ["/progress", "📊 Мой прогресс"]:
+    if text == "/progress" or "Мой прогресс" in text:
        profile = profiles.get(chat_id)
 
     if not profile:
