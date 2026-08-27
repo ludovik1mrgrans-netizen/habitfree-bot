@@ -283,7 +283,7 @@ def webhook():
             return "OK", 200
         
 
-            send_message(
+        send_message(
                 chat_id,
                 "📊 <b>Твой прогресс</b>\n\n"
                 f"🎯 Цель: {profile.get('goal', 'не указана')}\n"
