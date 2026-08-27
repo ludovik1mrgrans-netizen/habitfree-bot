@@ -58,7 +58,38 @@ def save_user(telegram_id, first_name, username=None):
 # Позже подключим настоящую БД.
 user_states = {}
 profiles = {}
+def update_user_profile(telegram_id, **fields):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        print("Supabase variables are missing")
+        return False
 
+    url = f"{SUPABASE_URL}/rest/v1/users?telegram_id=eq.{telegram_id}"
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+    }
+
+    try:
+        response = requests.patch(
+            url,
+            headers=headers,
+            json=fields,
+            timeout=10
+        )
+
+        if response.status_code in [200, 204]:
+            print(f"Supabase profile updated: {telegram_id}")
+            return True
+
+        print("Supabase update error:", response.status_code, response.text)
+        return False
+
+    except Exception as e:
+        print("Supabase update request error:", str(e))
+        return False
 
 def send_message(chat_id, text, keyboard=None):
     data = {
