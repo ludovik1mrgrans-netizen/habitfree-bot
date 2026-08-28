@@ -526,7 +526,8 @@ def webhook():
         "6", "7", "8", "9", "10"
     ]:
         craving_level = int(text)
-
+        user_states[f"{chat_id}_craving_level"] = craving_level
+        
         user_states[chat_id] = "craving_trigger"
 
         keyboard = [
@@ -553,6 +554,7 @@ def webhook():
         "☕ Привычная ситуация",
         "🤷 Не знаю"
     ]:
+        user_states[f"{chat_id}_craving_trigger"] = text
         user_states[chat_id] = "craving_action"
 
         actions = {
@@ -590,6 +592,13 @@ def webhook():
         return "OK", 200
         
     if state == "craving_action" and text == "✅ Отпустило":
+        save_craving_session(
+            chat_id,
+            level_start=user_states.get(f"{chat_id}_craving_level"),
+            trigger=user_states.get(f"{chat_id}_craving_trigger"),
+            level_end=None,
+            result="resolved"
+        )
         user_states[chat_id] = None
 
         send_message(
@@ -635,6 +644,13 @@ def webhook():
         second_level = int(text)
 
         if second_level <= 5:
+            save_craving_session(
+                chat_id,
+                level_start=user_states.get(f"{chat_id}_craving_level"),
+                trigger=user_states.get(f"{chat_id}_craving_trigger"),
+                level_end=second_level,
+                result="resolved"
+            )
             user_states[chat_id] = None
 
             send_message(
