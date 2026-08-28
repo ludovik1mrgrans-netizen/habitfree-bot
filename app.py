@@ -341,6 +341,49 @@ def get_last_7_days(telegram_id):
     except Exception as e:
         print("Last 7 days error:", str(e))
         return ["⚪"] * 7
+
+def save_craving_session(telegram_id, level_start=None, trigger=None, level_end=None, result=None):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return False
+
+    url = f"{SUPABASE_URL}/rest/v1/cravings"
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "telegram_id": telegram_id,
+        "level_start": level_start,
+        "trigger": trigger,
+        "level_end": level_end,
+        "result": result
+    }
+
+    try:
+        response = requests.post(
+            url,
+            headers=headers,
+            json=data,
+            timeout=10
+        )
+
+        if response.status_code not in [200, 201]:
+            print(
+                "Craving save error:",
+                response.status_code,
+                response.text,
+                flush=True
+            )
+            return False
+
+        return True
+
+    except Exception as e:
+        print("Craving save exception:", str(e), flush=True)
+        return False
         
 def send_message(chat_id, text, keyboard=None):
     data = {
