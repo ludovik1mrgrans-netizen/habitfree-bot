@@ -546,6 +546,21 @@ def webhook():
 
         return "OK", 200
         
+    if state == "craving_action" and text == "✅ Отпустило":
+        user_states[chat_id] = None
+
+        send_message(
+            chat_id,
+            "✅ <b>Отлично. Импульс прошёл.</b>\n\n"
+            "Ты не обязан был убрать желание мгновенно — "
+            "важно, что ты не пошёл за ним автоматически.\n\n"
+            "Запомни этот момент: тяга приходит волной "
+            "и может уйти, если дать себе немного времени."
+        )
+
+        main_menu(chat_id)
+        return "OK", 200
+        
            # PROGRESS
     print("REACHED PROGRESS CHECK:", repr(text), flush=True)
 
