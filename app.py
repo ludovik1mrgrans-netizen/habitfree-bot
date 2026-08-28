@@ -560,6 +560,72 @@ def webhook():
 
         main_menu(chat_id)
         return "OK", 200
+
+    if state == "craving_action" and text == "🔥 Всё ещё хочется":
+        user_states[chat_id] = "craving_second_check"
+
+        keyboard = [
+            ["1", "2", "3", "4", "5"],
+            ["6", "7", "8", "9", "10"],
+            ["🏠 Меню"]
+        ]
+
+        send_message(
+            chat_id,
+            "🔥 <b>Понял. Тяга ещё держится.</b>\n\n"
+            "Сейчас не нужно спорить с ней или пытаться заставить себя ничего не чувствовать.\n\n"
+            "Сделай один конкретный шаг:\n"
+            "• встань и смени место;\n"
+            "• выпей воды;\n"
+            "• убери сигареты/вейп подальше от себя;\n"
+            "• поставь таймер на 5 минут.\n\n"
+            "А теперь оцени тягу ещё раз от <b>1 до 10</b>:",
+            keyboard
+        )
+
+        return "OK", 200
+
+    if state == "craving_second_check" and text in [
+        "1", "2", "3", "4", "5",
+        "6", "7", "8", "9", "10"
+    ]:
+        second_level = int(text)
+
+        if second_level <= 5:
+            user_states[chat_id] = None
+
+            send_message(
+                chat_id,
+                f"✅ <b>Уже лучше: {second_level}/10.</b>\n\n"
+                "Тяга снизилась. Сейчас главное — не возвращаться "
+                "к автоматическому действию.\n\n"
+                "Продолжай ещё несколько минут в том же направлении."
+            )
+
+            main_menu(chat_id)
+            return "OK", 200
+
+        user_states[chat_id] = "craving_action"
+
+        keyboard = [
+            ["✅ Отпустило"],
+            ["🔥 Всё ещё хочется"],
+            ["🏠 Меню"]
+        ]
+
+        send_message(
+            chat_id,
+            f"🔥 Тяга всё ещё высокая — <b>{second_level}/10</b>.\n\n"
+            "Сделай ещё один короткий круг:\n"
+            "• уйди подальше от триггера;\n"
+            "• выпей воды;\n"
+            "• сделай 10 медленных вдохов;\n"
+            "• займись любым действием на 5 минут.\n\n"
+            "Не нужно решать весь день. Только ближайшие несколько минут.",
+            keyboard
+        )
+
+        return "OK", 200
         
            # PROGRESS
     print("REACHED PROGRESS CHECK:", repr(text), flush=True)
