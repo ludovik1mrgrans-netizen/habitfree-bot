@@ -384,7 +384,79 @@ def save_craving_session(telegram_id, level_start=None, trigger=None, level_end=
     except Exception as e:
         print("Craving save exception:", str(e), flush=True)
         return False
-        
+
+def get_craving_count(telegram_id):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return 0
+
+    url = (
+        f"{SUPABASE_URL}/rest/v1/cravings"
+        f"?telegram_id=eq.{telegram_id}"
+        f"&select=id"
+    )
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}"
+    }
+
+    try:
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=10
+        )
+
+        if response.status_code == 200:
+            return len(response.json())
+
+    except Exception as e:
+        print("Craving count error:", str(e), flush=True)
+
+    return 0
+
+def get_top_craving_trigger(telegram_id):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return None
+
+    url = (
+        f"{SUPABASE_URL}/rest/v1/cravings"
+        f"?telegram_id=eq.{telegram_id}"
+        f"&select=trigger"
+    )
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}"
+    }
+
+    try:
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=10
+        )
+
+        if response.status_code != 200:
+            return None
+
+        rows = response.json()
+
+        triggers = [
+            row.get("trigger")
+            for row in rows
+            if row.get("trigger")
+        ]
+
+        if not triggers:
+            return None
+
+        return max(set(triggers), key=triggers.count)
+
+    except Exception as e:
+        print("Top trigger error:", str(e), flush=True)
+        return None
+
 def send_message(chat_id, text, keyboard=None):
     data = {
         "chat_id": chat_id,
@@ -718,6 +790,8 @@ def webhook():
             return "OK", 200
 
         profile["successful_days"] = get_successful_days(chat_id)
+        craving_count = get_craving_count(chat_id)
+        top_trigger = get_top_craving_trigger(chat_id)
         relapse_count = get_relapse_count(chat_id)
         last_relapse_reason = get_last_relapse_reason(chat_id)
         last_7_days = get_last_7_days(chat_id)
@@ -728,6 +802,8 @@ def webhook():
             f"🎯 Цель: {profile.get('goal', 'Не указана')}\n"
             f"🧠 Привычка: {profile.get('habit_type', 'Не указана')}\n"
             f"🔥 Успешных дней: {profile.get('successful_days', 0)}\n"
+            f"🆘 SOS-сессий: {craving_count}\n"
+            f"🎯 Частый триггер: {top_trigger or 'Пока нет данных'}\n"
             f"⚠️ Срывов: {relapse_count}\n"
             f"📅 Последние дни: {' '.join(last_7_days) if last_7_days else 'Пока нет данных'}\n"
             f"📝 Последняя причина: {(last_relapse_reason.split(': ', 1)[1] if ': ' in last_relapse_reason else last_relapse_reason) if last_relapse_reason else 'Пока нет'}\n\n"
