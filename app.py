@@ -342,7 +342,14 @@ def get_last_7_days(telegram_id):
         print("Last 7 days error:", str(e))
         return ["⚪"] * 7
 
-def save_craving_session(telegram_id, level_start=None, trigger=None, level_end=None, result=None):
+def save_craving_session(
+    telegram_id,
+    level_start=None,
+    trigger=None,
+    level_end=None,
+    result=None,
+    action_taken=None
+):
     if not SUPABASE_URL or not SUPABASE_KEY:
         return False
 
@@ -359,9 +366,9 @@ def save_craving_session(telegram_id, level_start=None, trigger=None, level_end=
         "level_start": level_start,
         "trigger": trigger,
         "level_end": level_end,
-        "result": result
+        "result": result,
+        "action_taken": action_taken
     }
-
     try:
         response = requests.post(
             url,
@@ -645,7 +652,9 @@ def webhook():
             "🤷 Не знаю":
                 "Не нужно сейчас искать точную причину. Выпей воды, сделай 5 медленных вдохов и просто пережди ближайшие 5 минут."
         }
-
+        
+        user_states[f"{chat_id}_craving_action_taken"] = actions[text]
+       
         keyboard = [
             ["✅ Отпустило"],
             ["🔥 Всё ещё хочется"],
@@ -669,10 +678,11 @@ def webhook():
             level_start=user_states.get(f"{chat_id}_craving_level"),
             trigger=user_states.get(f"{chat_id}_craving_trigger"),
             level_end=None,
-            result="resolved"
-        )
+            result="resolved",
+            action_taken=user_states.get(f"{chat_id}_craving_action_taken")
+        ) 
         user_states[chat_id] = None
-
+    
         send_message(
             chat_id,
             "✅ <b>Отлично. Импульс прошёл.</b>\n\n"
@@ -721,7 +731,8 @@ def webhook():
                 level_start=user_states.get(f"{chat_id}_craving_level"),
                 trigger=user_states.get(f"{chat_id}_craving_trigger"),
                 level_end=second_level,
-                result="resolved"
+                result="resolved",
+                action_taken=user_states.get(f"{chat_id}_craving_action_taken")
             )
             user_states[chat_id] = None
 
